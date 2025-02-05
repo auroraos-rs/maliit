@@ -1,0 +1,2 @@
+[build]
+pre-build = ["apt update && apt install libglib2.0-dev libmaliit-glib-dev -y"]
