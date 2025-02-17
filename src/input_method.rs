@@ -1,29 +1,22 @@
-use maliit_glib_sys::{maliit_input_method_new, maliit_input_method_show, maliit_input_method_hide, MaliitInputMethod};
+use crate::maliit_dbus::DbusMaliit;
 
 pub struct InputMethod {
-    inner: *mut MaliitInputMethod
+    dbus_maliit: DbusMaliit
 }
 
 impl InputMethod {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let inner =  unsafe {
-            maliit_input_method_new()
-        };
-        if inner.is_null() {
-            return Err("Error with creating MaliitInputMethod".into())
-        }
-        Ok(Self { inner })
+        let dbus_maliit =  DbusMaliit::new()?;
+        Ok(Self { dbus_maliit })
     }
 
     pub fn show_input_method(&self) {
-        unsafe {
-            maliit_input_method_show(self.inner);
-        }
+        self.dbus_maliit.activate_context().unwrap();
+        self.dbus_maliit.show_input_method().unwrap();
     }
 
     pub fn hide_input_method(&self) {
-        unsafe {
-            maliit_input_method_hide(self.inner);
-        }
+        self.dbus_maliit.activate_context().unwrap();
+        self.dbus_maliit.hide_input_method().unwrap();
     }
 }
