@@ -1,10 +1,8 @@
 [package]
-name = "maliit-glib"
+name = "maliit-rs"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# maliit-glib-sys = { git = "https://github.com/auroraos-rs/maliit-glib-sys" }
-# maliit-glib-sys = { path = "../maliit-glib-sys" }
 dbus = "0.9"
 thiserror = "2.0"
