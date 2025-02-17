@@ -1,5 +1,5 @@
 [package]
-name = "maliit-rs"
+name = "maliit"
 version = "0.1.0"
 edition = "2021"
 
