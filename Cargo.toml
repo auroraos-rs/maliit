@@ -6,3 +6,5 @@ edition = "2021"
 [dependencies]
 dbus = "0.9"
 thiserror = "2.0"
+log = "0.4"
+home = "0.5.11"

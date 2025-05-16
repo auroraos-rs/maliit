@@ -1,4 +1,5 @@
 use crate::maliit_dbus::DbusMaliit;
+use crate::events::InputMethodEvent;
 
 pub struct InputMethod {
     dbus_maliit: DbusMaliit
@@ -10,13 +11,18 @@ impl InputMethod {
         Ok(Self { dbus_maliit })
     }
 
-    pub fn show(&self) {
+    pub fn show(&mut self) {
         self.dbus_maliit.activate_context().unwrap();
         self.dbus_maliit.show_input_method().unwrap();
     }
 
-    pub fn hide(&self) {
+    pub fn hide(&mut self) {
         self.dbus_maliit.activate_context().unwrap();
         self.dbus_maliit.hide_input_method().unwrap();
+    }
+
+    pub fn get_new_events(&mut self) -> Option<Vec<InputMethodEvent>> {
+        self.dbus_maliit.process_events().unwrap();
+        self.dbus_maliit.get_new_events()
     }
 }
