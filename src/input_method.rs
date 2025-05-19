@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::maliit_dbus::DbusMaliit;
 use crate::events::InputMethodEvent;
 
@@ -21,8 +23,8 @@ impl InputMethod {
         self.dbus_maliit.hide_input_method().unwrap();
     }
 
-    pub fn get_new_events(&mut self) -> Option<Vec<InputMethodEvent>> {
-        self.dbus_maliit.process_events().unwrap();
+    pub fn poll_new_events(&mut self, timeout: Duration) -> Option<Vec<InputMethodEvent>> {
+        self.dbus_maliit.process_events(timeout).unwrap();
         self.dbus_maliit.get_new_events()
     }
 }

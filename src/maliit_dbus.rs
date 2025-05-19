@@ -112,8 +112,8 @@ impl DbusMaliit {
         Ok(())
     }
 
-    pub fn process_events(&self) -> Result<(), DbusMaliitServerError> {
-        self.dbus_conn.process(Duration::from_millis(5))?;
+    pub fn process_events(&self, timeout: Duration) -> Result<(), DbusMaliitServerError> {
+        self.dbus_conn.process(timeout)?;
         Ok(())
     }
 
