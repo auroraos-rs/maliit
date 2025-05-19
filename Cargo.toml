@@ -6,6 +6,8 @@ authors = ["Leyman Maksim <maximleyman@yandex.ru>"]
 description = "Maliit framework client library"
 keywords = ["maliit", "virtual-keyboard"]
 readme = "README.md"
+license = "Apache-2.0"
+repository = "https://github.com/auroraos-rs/maliit"
 exclude = ["/.cargo"]
 
 [dependencies]
