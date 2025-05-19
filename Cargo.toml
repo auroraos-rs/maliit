@@ -2,9 +2,13 @@
 name = "maliit"
 version = "0.1.0"
 edition = "2021"
+authors = ["Leyman Maksim <maximleyman@yandex.ru>"]
+description = "Maliit framework client library"
+keywords = ["maliit", "virtual-keyboard"]
+readme = "README.md"
+exclude = ["/.cargo"]
 
 [dependencies]
 dbus = "0.9"
 thiserror = "2.0"
 log = "0.4"
-home = "0.5.11"

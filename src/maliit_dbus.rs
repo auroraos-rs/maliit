@@ -41,7 +41,6 @@ impl DbusMaliit {
             token: None,
             events: Arc::new(Mutex::new(Vec::new())),
         };
-        // DbusMaliit::check_new_messages_async(&obj);
 
         Ok(obj)
     }
