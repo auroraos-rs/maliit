@@ -27,4 +27,8 @@ impl InputMethod {
         self.dbus_maliit.process_events(timeout).unwrap();
         self.dbus_maliit.get_new_events()
     }
+
+    pub fn reset(&mut self) {
+        self.dbus_maliit.reset().unwrap()
+    }
 }

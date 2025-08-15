@@ -51,6 +51,12 @@ impl DbusMaliit {
         Ok(())
     }
 
+    pub fn reset(&self) -> Result<(), DbusMaliitServerError> {
+        let maliit_proxy = self.dbus_conn.with_proxy(SERVER_DBUS_NAME, SERVER_PATH, Duration::from_secs(5));
+        let _: () = maliit_proxy.method_call(SERVER_DBUS_NAME, "reset", ())?;
+        Ok(())
+    }
+
     pub fn show_input_method(&mut self) -> Result<(), DbusMaliitServerError> {
         let maliit_proxy = self.dbus_conn.with_proxy(SERVER_DBUS_NAME, SERVER_PATH, Duration::from_secs(5));
         let _: () = maliit_proxy.method_call(SERVER_DBUS_NAME, "showInputMethod", ())?;
@@ -61,12 +67,14 @@ impl DbusMaliit {
                 if let Some(member) = msg.member() {
                     match member.to_string().as_str() {
                         "commitString" => {
-                            if let Some(text) = msg.get1::<String>() {
+                            if let (Some(text), Some(x), Some(y), Some(z)) = msg.get4::<String, i32, i32, i32>() {
+                                println!("Something with commitString: {}, {}, {}", x, y, z);
                                 events.lock().unwrap().push(InputMethodEvent::Text(text));
                             }
                         },
                         "updateInputMethodArea" => {
-                            if let (Some(x), Some(y)) = msg.get2::<i32, i32>() {
+                            if let (Some(x), Some(y), Some(w), Some(h)) = msg.get4::<i32, i32, i32, i32>() {
+                                println!("Data with updateInputMethodArea: x={}, y={}, w={}, h={}", x, y, w, h);
                                 events.lock().unwrap().push(InputMethodEvent::AreaChanged(x, y));
                                 return y != 0 // Drops callback if InputMethod hided
                             }
