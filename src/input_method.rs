@@ -18,7 +18,7 @@ impl InputMethod {
     pub fn show(&mut self) {
         self.ui_server.activate_context().unwrap();
         self.ui_server.show_input_method().unwrap();
-        self.ui_server.set_preedit("hell", 0).unwrap();
+        self.context.update_preedit("", (0,0,0), 0, 0, -1).unwrap();
         self.context.start_input_events_processing().unwrap();
     }
 

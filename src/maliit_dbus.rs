@@ -187,6 +187,19 @@ impl MaliitContext {
         self.proxy().connection.process(timeout)?;
         Ok(())
     }
+
+    pub fn update_preedit(
+        &mut self,
+        text: &str,
+        preedit_formats: (i32, i32, i32),
+        replacement_start: i32,
+        replacement_length: i32,
+        cursor_position: i32,
+    ) -> Result<(), DbusMaliitServerError> {
+        let method_args = (text, preedit_formats, replacement_start, replacement_length, cursor_position);
+        let _: () = self.proxy().method_call(CONTEXT_INTERFACE, "updatePreedit", method_args)?;
+        Ok(())
+    }
 }
 
 
