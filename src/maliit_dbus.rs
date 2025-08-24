@@ -3,8 +3,8 @@ use std::sync::{Arc, Mutex};
 
 use thiserror::Error;
 use dbus::{
-    blocking::{stdintf::org_freedesktop_dbus::Properties, SyncConnection},
-    channel::{Channel as DbusChannel, MatchingReceiver, Token},
+    blocking::{stdintf::org_freedesktop_dbus::Properties, SyncConnection, Proxy},
+    channel::{Channel as DbusChannel, Token},
     Error as DbusError
 };
 
@@ -18,14 +18,12 @@ const ADDRESS_PROPERTY: &str = "address";
 const SERVER_DBUS_NAME: &str = "com.meego.inputmethod.uiserver1";
 const SERVER_PATH: &str = "/com/meego/inputmethod/uiserver1";
 
-const _CONTEXT_INTERFACE: &str = "com.meego.inputmethod.inputcontext1";
-const _CONTEXT_PATH: &str = "/com/meego/inputmethod/inputcontext";
+const CONTEXT_INTERFACE: &str = "com.meego.inputmethod.inputcontext1";
+const CONTEXT_PATH: &str = "/com/meego/inputmethod/inputcontext";
 
 
 pub(crate) struct DbusMaliit {
-    dbus_conn: Arc<SyncConnection>,
-    token: Option<Token>,
-    events: Arc<Mutex<Vec<InputMethodEvent>>>,
+    dbus_conn: SyncConnection,
 }
 
 impl DbusMaliit {
@@ -36,32 +34,94 @@ impl DbusMaliit {
         log::info!("Got Maliit Server dbus address: {}", address);
         let channel = DbusChannel::open_private(address.as_str())?;
 
-        let obj = Self {
-            dbus_conn: Arc::new(SyncConnection::from(channel)),
-            token: None,
-            events: Arc::new(Mutex::new(Vec::new())),
-        };
+        let dbus_conn = SyncConnection::from(channel);
+
+
+        let obj = Self { dbus_conn };
 
         Ok(obj)
     }
 
+    pub fn into_main_interfaces(self) -> (MaliitUiServer, MaliitContext) {
+        let dbus_conn = Arc::new(self.dbus_conn);
+        let ui_server = MaliitUiServer::new(dbus_conn.clone());
+        let context = MaliitContext::new(dbus_conn.clone());
+
+        (ui_server, context)
+    }
+}
+
+
+pub(crate) struct MaliitUiServer {
+    dbus_conn: Arc<SyncConnection>
+}
+
+impl MaliitUiServer {
+    pub fn new(dbus_conn: Arc<SyncConnection>) -> Self {
+        Self { dbus_conn }
+    }
+
+    fn proxy(&self) -> Proxy<'_, &SyncConnection> {
+        self.dbus_conn.with_proxy(SERVER_DBUS_NAME, SERVER_PATH, Duration::from_secs(5))
+    }
+
     pub fn activate_context(&self) -> Result<(), DbusMaliitServerError> {
-        let maliit_proxy = self.dbus_conn.with_proxy(SERVER_DBUS_NAME, SERVER_PATH, Duration::from_secs(5));
-        let _: () = maliit_proxy.method_call(SERVER_DBUS_NAME, "activateContext", ())?;
+        let _: () = self.proxy().method_call(SERVER_DBUS_NAME, "activateContext", ())?;
         Ok(())
     }
 
     pub fn reset(&self) -> Result<(), DbusMaliitServerError> {
-        let maliit_proxy = self.dbus_conn.with_proxy(SERVER_DBUS_NAME, SERVER_PATH, Duration::from_secs(5));
-        let _: () = maliit_proxy.method_call(SERVER_DBUS_NAME, "reset", ())?;
+        let _: () = self.proxy().method_call(SERVER_DBUS_NAME, "reset", ())?;
         Ok(())
     }
 
     pub fn show_input_method(&mut self) -> Result<(), DbusMaliitServerError> {
-        let maliit_proxy = self.dbus_conn.with_proxy(SERVER_DBUS_NAME, SERVER_PATH, Duration::from_secs(5));
-        let _: () = maliit_proxy.method_call(SERVER_DBUS_NAME, "showInputMethod", ())?;
+        let _: () = self.proxy().method_call(SERVER_DBUS_NAME, "showInputMethod", ())?;
+        Ok(())
+    }
+
+    pub fn hide_input_method(&mut self) -> Result<(), DbusMaliitServerError> {
+        let _: () = self.proxy().method_call(SERVER_DBUS_NAME, "hideInputMethod", ())?;
+        Ok(())
+    }
+
+    pub fn set_preedit(&mut self, preedit_text: &str, cursor_position: i32) -> Result<(), DbusMaliitServerError> {
+        let _: () = self.proxy().method_call(SERVER_DBUS_NAME, "setPreedit", (preedit_text, cursor_position))?;
+        Ok(())
+    }
+}
+
+pub(crate) struct MaliitContext {
+    dbus_conn: Arc<SyncConnection>,
+    token: Option<Token>,
+    events: Arc<Mutex<Vec<InputMethodEvent>>>,
+}
+
+impl MaliitContext {
+    pub fn new(dbus_conn: Arc<SyncConnection>) -> Self {
+        Self {
+            dbus_conn,
+            token: None,
+            events: Arc::new(Mutex::new(Vec::new())),
+        }
+    }
+
+    fn proxy(&self) -> Proxy<'_, &SyncConnection> {
+        self.dbus_conn.with_proxy(CONTEXT_INTERFACE, CONTEXT_PATH, Duration::from_secs(5))
+    }
+
+    pub fn stop_input_eventsprocessing(&mut self) -> Result<(), DbusMaliitServerError> {
+        if let Some(token) = self.token.take() {
+            self.proxy().match_stop(token, true)?;
+            Ok(())
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn start_input_events_processing(&mut self) -> Result<(), DbusMaliitServerError> {
         let events = self.events.clone();
-        let token = self.dbus_conn.start_receive(dbus::message::MatchRule::new_method_call(), Box::new(move |msg, _conn|
+        let token = self.proxy().match_start(dbus::message::MatchRule::new_method_call(), true, Box::new(move |msg, _conn|
             {
                 log::debug!("Received dbus message: {:?}", msg);
                 if let Some(member) = msg.member() {
@@ -106,21 +166,8 @@ impl DbusMaliit {
                 }
                 true
             }
-        ));
+        ))?;
         self.token = Some(token);
-
-        Ok(())
-    }
-
-    pub fn hide_input_method(&mut self) -> Result<(), DbusMaliitServerError> {
-        let maliit_proxy = self.dbus_conn.with_proxy(SERVER_DBUS_NAME, SERVER_PATH, Duration::from_secs(5));
-        let _: () = maliit_proxy.method_call(SERVER_DBUS_NAME, "hideInputMethod", ())?;
-        self.token.take().map(|t| self.dbus_conn.stop_receive(t));
-        Ok(())
-    }
-
-    pub fn process_events(&self, timeout: Duration) -> Result<(), DbusMaliitServerError> {
-        self.dbus_conn.process(timeout)?;
         Ok(())
     }
 
@@ -134,6 +181,11 @@ impl DbusMaliit {
         };
         let events: &mut Vec<InputMethodEvent> = mutex.as_mut();
         Some(std::mem::take(events))
+    }
+
+    pub fn process_events(&self, timeout: Duration) -> Result<(), DbusMaliitServerError> {
+        self.proxy().connection.process(timeout)?;
+        Ok(())
     }
 }
 
