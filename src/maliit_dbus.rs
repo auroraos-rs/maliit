@@ -112,7 +112,7 @@ impl MaliitContext {
 
     pub fn stop_input_eventsprocessing(&mut self) -> Result<(), DbusMaliitServerError> {
         if let Some(token) = self.token.take() {
-            self.proxy().match_stop(token, true)?;
+            self.proxy().match_stop(token, false)?;
             Ok(())
         } else {
             Ok(())
@@ -121,7 +121,7 @@ impl MaliitContext {
 
     pub fn start_input_events_processing(&mut self) -> Result<(), DbusMaliitServerError> {
         let events = self.events.clone();
-        let token = self.proxy().match_start(dbus::message::MatchRule::new_method_call(), true, Box::new(move |msg, _conn|
+        let token = self.proxy().match_start(dbus::message::MatchRule::new_method_call(), false, Box::new(move |msg, _conn|
             {
                 log::debug!("Received dbus message: {:?}", msg);
                 if let Some(member) = msg.member() {
