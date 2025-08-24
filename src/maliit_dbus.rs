@@ -200,6 +200,11 @@ impl MaliitContext {
         let _: () = self.proxy().method_call(CONTEXT_INTERFACE, "updatePreedit", method_args)?;
         Ok(())
     }
+
+    pub fn set_language(&mut self, language: &str) -> Result<(), DbusMaliitServerError> {
+        let _: () = self.proxy().method_call(CONTEXT_INTERFACE, "setLanguage", (language,))?;
+        Ok(())
+    }
 }
 
 

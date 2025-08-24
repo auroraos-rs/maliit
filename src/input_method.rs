@@ -18,7 +18,11 @@ impl InputMethod {
     pub fn show(&mut self) {
         self.ui_server.activate_context().unwrap();
         self.ui_server.show_input_method().unwrap();
-        self.context.update_preedit("", (0,0,0), 0, 0, -1).unwrap();
+        // self.context.update_preedit("", (0,0,0), 0, 0, -1).unwrap();
+        match self.context.set_language("ru") {
+            Ok(_) => { println!("Set language successful") },
+            Err(e) => { println!("Failed to set language: {}", e) }
+        };
         self.context.start_input_events_processing().unwrap();
     }
 
