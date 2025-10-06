@@ -1,6 +1,6 @@
 [package]
 name = "maliit"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Leyman Maksim <maximleyman@yandex.ru>"]
 description = "Maliit framework client library"
