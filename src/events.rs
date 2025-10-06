@@ -7,7 +7,7 @@ pub enum Key {
 #[derive(Debug, Clone)]
 pub enum InputMethodEvent {
     Text(String),
-    AreaChanged(i32, i32),
+    AreaChanged(i32, i32, i32, i32),
     Key {
         key: Key,
         pressed: bool

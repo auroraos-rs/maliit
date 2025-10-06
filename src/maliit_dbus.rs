@@ -66,8 +66,8 @@ impl DbusMaliit {
                             }
                         },
                         "updateInputMethodArea" => {
-                            if let (Some(x), Some(y)) = msg.get2::<i32, i32>() {
-                                events.lock().unwrap().push(InputMethodEvent::AreaChanged(x, y));
+                            if let (Some(x), Some(y), Some(width), Some(height)) = msg.get4::<i32, i32, i32, i32>() {
+                                events.lock().unwrap().push(InputMethodEvent::AreaChanged(x, y, width, height));
                                 return y != 0 // Drops callback if InputMethod hided
                             }
                         },
