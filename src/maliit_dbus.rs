@@ -133,9 +133,8 @@ impl MaliitContext {
                             }
                         },
                         "updateInputMethodArea" => {
-                            if let (Some(x), Some(y), Some(w), Some(h)) = msg.get4::<i32, i32, i32, i32>() {
-                                println!("Data with updateInputMethodArea: x={}, y={}, w={}, h={}", x, y, w, h);
-                                events.lock().unwrap().push(InputMethodEvent::AreaChanged(x, y));
+                            if let (Some(x), Some(y), Some(width), Some(height)) = msg.get4::<i32, i32, i32, i32>() {
+                                events.lock().unwrap().push(InputMethodEvent::AreaChanged(x, y, width, height));
                                 return y != 0 // Drops callback if InputMethod hided
                             }
                         },
