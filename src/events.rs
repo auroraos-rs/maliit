@@ -13,3 +13,12 @@ pub enum InputMethodEvent {
         pressed: bool
     }
 }
+
+/// Supported screen orientations for keyboard rotation.
+#[derive(Debug, Clone, Copy)]
+pub enum Orientation {
+    Portrait = 0,
+    Landscape = 90,
+    PortraitFlipped = 180,
+    LandscapeFlipped = 270,
+}

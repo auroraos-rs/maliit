@@ -3,7 +3,7 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 
 use crate::error::MaliitError;
-use crate::events::InputMethodEvent;
+use crate::events::{InputMethodEvent, Orientation};
 use crate::maliit_dbus::{DbusMaliit, MaliitContext, MaliitUiServer};
 
 pub struct InputMethod {
@@ -52,6 +52,14 @@ impl InputMethod {
 
     pub fn set_language(&mut self, lang: &str) -> Result<(), MaliitError> {
         self.context.set_language(lang)?;
+        Ok(())
+    }
+
+    pub fn rotate(&mut self, orientation: Orientation) -> Result<(), MaliitError> {
+        let angle = orientation as i32;
+        self.ui_server.activate_context()?;
+        self.ui_server.app_orientation_about_to_change(angle)?;
+        self.ui_server.app_orientation_changed(angle)?;
         Ok(())
     }
 

@@ -96,6 +96,20 @@ impl MaliitUiServer {
             .method_call(SERVER_DBUS_NAME, "setPreedit", (preedit_text, cursor_position))?;
         Ok(())
     }
+
+    pub fn app_orientation_about_to_change(&mut self, angle: i32) -> Result<(), MaliitError> {
+        let _: () = self
+            .proxy()
+            .method_call(SERVER_DBUS_NAME, "appOrientationAboutToChange", (angle,))?;
+        Ok(())
+    }
+
+    pub fn app_orientation_changed(&mut self, angle: i32) -> Result<(), MaliitError> {
+        let _: () = self
+            .proxy()
+            .method_call(SERVER_DBUS_NAME, "appOrientationChanged", (angle,))?;
+        Ok(())
+    }
 }
 
 pub(crate) struct MaliitContext {

@@ -4,3 +4,4 @@ pub mod events;
 pub mod input_method;
 
 pub use error::MaliitError;
+pub use events::Orientation;

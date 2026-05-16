@@ -61,6 +61,7 @@ fn main() -> Result<(), MaliitError> {
 | `hide()` | Скрыть экранную клавиатуру |
 | `reset()` | Сбросить состояние ввода |
 | `set_language(lang)` | Установить язык клавиатуры |
+| `rotate(orientation)` | Повернуть клавиатуру (`Orientation::Portrait` / `Landscape` / `PortraitFlipped` / `LandscapeFlipped`) |
 
 ### Обработка событий
 
