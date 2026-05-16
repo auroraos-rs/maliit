@@ -1,3 +1,5 @@
+use std::sync::mpsc;
+use std::thread::JoinHandle;
 use std::time::Duration;
 
 use crate::error::MaliitError;
@@ -7,6 +9,17 @@ use crate::maliit_dbus::{DbusMaliit, MaliitContext, MaliitUiServer};
 pub struct InputMethod {
     ui_server: MaliitUiServer,
     context: MaliitContext,
+    event_thread: Option<EventThread>,
+}
+
+struct EventThread {
+    command_sender: mpsc::Sender<EventCommand>,
+    join_handle: JoinHandle<()>,
+}
+
+enum EventCommand {
+    AddHandler(Box<dyn Fn(InputMethodEvent) + Send>),
+    Stop,
 }
 
 impl InputMethod {
@@ -16,20 +29,19 @@ impl InputMethod {
         Ok(Self {
             ui_server,
             context,
+            event_thread: None,
         })
     }
 
     pub fn show(&mut self) -> Result<(), MaliitError> {
         self.ui_server.activate_context()?;
         self.ui_server.show_input_method()?;
-        self.context.start_input_events_processing()?;
         Ok(())
     }
 
     pub fn hide(&mut self) -> Result<(), MaliitError> {
         self.ui_server.activate_context()?;
         self.ui_server.hide_input_method()?;
-        self.context.stop_input_events_processing()?;
         Ok(())
     }
 
@@ -43,28 +55,84 @@ impl InputMethod {
         Ok(())
     }
 
-    /// Poll pending events and invoke the handler for each.
-    pub fn process_events_with<F>(
-        &mut self,
-        timeout: Duration,
-        mut handler: F,
-    ) -> Result<(), MaliitError>
+    /// Register a callback that will be called for every IME event.
+    ///
+    /// The first call spawns a background thread that blocks on D-Bus.
+    /// Subsequent calls add more handlers. All handlers receive the same event.
+    pub fn add_event_handler<F>(&mut self, handler: F) -> Result<(), MaliitError>
     where
-        F: FnMut(InputMethodEvent),
+        F: Fn(InputMethodEvent) + Send + 'static,
     {
-        let events = self.poll_events(timeout)?;
-        for event in events {
-            handler(event);
+        if self.event_thread.is_none() {
+            let dbus_conn = self.context.dbus_conn();
+            let (cmd_tx, cmd_rx) = mpsc::channel();
+            let (startup_tx, startup_rx) = mpsc::channel();
+
+            let handle = std::thread::spawn(move || {
+                let mut context = MaliitContext::new(dbus_conn);
+
+                if let Err(e) = context.start_input_events_processing() {
+                    let _ = startup_tx.send(Err(e));
+                    return;
+                }
+
+                if startup_tx.send(Ok(())).is_err() {
+                    let _ = context.stop_input_events_processing();
+                    return;
+                }
+
+                let mut handlers: Vec<Box<dyn Fn(InputMethodEvent) + Send>> = Vec::new();
+
+                loop {
+                    match cmd_rx.try_recv() {
+                        Ok(EventCommand::AddHandler(h)) => handlers.push(h),
+                        Ok(EventCommand::Stop) => break,
+                        Err(mpsc::TryRecvError::Disconnected) => break,
+                        Err(mpsc::TryRecvError::Empty) => {}
+                    }
+
+                    if context.process_events(Duration::from_millis(100)).is_ok() {
+                        for event in context.get_new_events() {
+                            for handler in &handlers {
+                                handler(event.clone());
+                            }
+                        }
+                    }
+                }
+
+                if let Err(e) = context.stop_input_events_processing() {
+                    log::error!("Failed to stop input events processing in event thread: {}", e);
+                }
+            });
+
+            match startup_rx.recv() {
+                Ok(Ok(())) => {
+                    self.event_thread = Some(EventThread {
+                        command_sender: cmd_tx,
+                        join_handle: handle,
+                    });
+                }
+                Ok(Err(e)) => return Err(e),
+                Err(_) => return Err(MaliitError::NotAvailable),
+            }
         }
+
+        let thread = self.event_thread.as_ref().unwrap();
+        thread
+            .command_sender
+            .send(EventCommand::AddHandler(Box::new(handler)))
+            .map_err(|_| MaliitError::NotAvailable)?;
+
         Ok(())
     }
 
-    /// Low-level: return pending events without a callback.
-    pub fn poll_events(
-        &mut self,
-        timeout: Duration,
-    ) -> Result<Vec<InputMethodEvent>, MaliitError> {
-        self.context.process_events(timeout)?;
-        Ok(self.context.get_new_events())
+    /// Remove all event handlers and stop the background thread.
+    pub fn clear_event_handlers(&mut self) {
+        if let Some(thread) = self.event_thread.take() {
+            let _ = thread.command_sender.send(EventCommand::Stop);
+            if let Err(e) = thread.join_handle.join() {
+                log::error!("Event thread panicked: {:?}", e);
+            }
+        }
     }
 }

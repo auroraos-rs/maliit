@@ -113,6 +113,10 @@ impl MaliitContext {
         }
     }
 
+    pub(crate) fn dbus_conn(&self) -> Arc<SyncConnection> {
+        self.dbus_conn.clone()
+    }
+
     fn proxy(&self) -> Proxy<'_, &SyncConnection> {
         self.dbus_conn
             .with_proxy(CONTEXT_INTERFACE, CONTEXT_PATH, Duration::from_secs(5))

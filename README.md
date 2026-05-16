@@ -21,10 +21,14 @@
 
 ```rust
 use maliit::{InputMethod, MaliitError};
-use std::time::Duration;
 
 fn main() -> Result<(), MaliitError> {
     let mut im = InputMethod::new()?;
+
+    // Регистрация обработчика событий (запускает фоновый поток)
+    im.add_event_handler(|event| {
+        println!("Событие: {:?}", event);
+    })?;
 
     // Установка языка перед показом клавиатуры
     im.set_language("ru")?;
@@ -32,13 +36,13 @@ fn main() -> Result<(), MaliitError> {
     // Показать клавиатуру
     im.show()?;
 
-    // Обработка событий через callback
-    im.process_events_with(Duration::from_millis(100), |event| {
-        println!("Событие: {:?}", event);
-    })?;
+    // ... работа с клавиатурой ...
 
     // Скрыть клавиатуру
     im.hide()?;
+
+    // Остановить обработчики и завершить фоновый поток
+    im.clear_event_handlers();
 
     Ok(())
 }
@@ -46,23 +50,26 @@ fn main() -> Result<(), MaliitError> {
 
 ## API
 
-Все публичные методы `InputMethod` возвращают `Result<..., MaliitError>` вместо паники при ошибках D-Bus.
+Все публичные методы `InputMethod` возвращают `Result<..., MaliitError>`.
 
 ### Основные методы
 
 | Метод | Описание |
 |---|---|
 | `InputMethod::new()` | Подключение к Maliit серверу по D-Bus |
-| `show()` | Показать экранную клавиатуру и начать обработку событий |
-| `hide()` | Скрыть экранную клавиатуру и остановить обработку событий |
+| `show()` | Показать экранную клавиатуру |
+| `hide()` | Скрыть экранную клавиатуру |
 | `reset()` | Сбросить состояние ввода |
 | `set_language(lang)` | Установить язык клавиатуры |
 
 ### Обработка событий
 
+События обрабатываются в фоновом потоке. Каждый зарегистрированный обработчик
+вызывается для каждого события.
+
 ```rust
-// Через callback (рекомендуется)
-im.process_events_with(timeout, |event| {
+// Добавить обработчик (первый вызов запускает фоновый поток)
+im.add_event_handler(|event| {
     match event {
         InputMethodEvent::Text(text) => { /* текст введён */ }
         InputMethodEvent::Key { key, pressed } => { /* нажата клавиша */ }
@@ -70,9 +77,13 @@ im.process_events_with(timeout, |event| {
     }
 })?;
 
-// Или пакетная обработка
-let events = im.poll_events(timeout)?;
-for event in events { ... }
+// Можно добавить несколько обработчиков
+im.add_event_handler(|event| {
+    log::debug!("Second handler: {:?}", event);
+})?;
+
+// Остановить все обработчики и завершить поток
+im.clear_event_handlers();
 ```
 
 ## Ошибки
