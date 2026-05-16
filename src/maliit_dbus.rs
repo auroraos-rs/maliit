@@ -163,7 +163,6 @@ impl MaliitContext {
                                 if let Ok(mut ev) = events.lock() {
                                     ev.push(InputMethodEvent::AreaChanged(x, y, width, height));
                                 }
-                                return y != 0; // Drops callback if InputMethod hided
                             }
                         }
                         "keyEvent" => {
