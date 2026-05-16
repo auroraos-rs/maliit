@@ -57,7 +57,7 @@ impl InputMethod {
 
     /// Register a callback that will be called for every IME event.
     ///
-    /// The first call spawns a background thread that blocks on D-Bus.
+    /// The first call spawns a background thread that polls D-Bus.
     /// Subsequent calls add more handlers. All handlers receive the same event.
     pub fn add_event_handler<F>(&mut self, handler: F) -> Result<(), MaliitError>
     where
@@ -91,13 +91,15 @@ impl InputMethod {
                         Err(mpsc::TryRecvError::Empty) => {}
                     }
 
-                    if context.process_events(Duration::from_millis(100)).is_ok() {
+                    while context.process_events(Duration::from_secs(0)).unwrap_or(false) {
                         for event in context.get_new_events() {
                             for handler in &handlers {
                                 handler(event.clone());
                             }
                         }
                     }
+
+                    std::thread::sleep(Duration::from_millis(10));
                 }
 
                 if let Err(e) = context.stop_input_events_processing() {

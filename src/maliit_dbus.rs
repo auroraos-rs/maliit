@@ -211,9 +211,8 @@ impl MaliitContext {
         }
     }
 
-    pub fn process_events(&self, timeout: Duration) -> Result<(), MaliitError> {
-        self.proxy().connection.process(timeout)?;
-        Ok(())
+    pub fn process_events(&self, timeout: Duration) -> Result<bool, MaliitError> {
+        Ok(self.proxy().connection.process(timeout)?)
     }
 
     pub fn update_preedit(
