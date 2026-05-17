@@ -11,7 +11,11 @@ pub enum InputMethodEvent {
     Key {
         key: Key,
         pressed: bool
-    }
+    },
+    /// Maliit server requested to hide the keyboard (e.g. user pressed hide button).
+    ImInitiatedHide,
+    /// The input context lost activation on the Maliit server.
+    ActivationLost,
 }
 
 /// Supported screen orientations for keyboard rotation.

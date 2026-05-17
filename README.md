@@ -77,6 +77,8 @@ im.add_event_handler(|event| {
         InputMethodEvent::Text(text) => { /* текст введён */ }
         InputMethodEvent::Key { key, pressed } => { /* нажата клавиша */ }
         InputMethodEvent::AreaChanged(x, y, w, h) => { /* изменилась область клавиатуры */ }
+        InputMethodEvent::ImInitiatedHide => { /* пользователь нажал кнопку скрытия клавиатуры */ }
+        InputMethodEvent::ActivationLost => { /* контекст потерял активацию */ }
     }
 })?;
 

@@ -1,10 +1,11 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use dbus::arg::messageitem::{MessageItem, MessageItemDict};
 use dbus::blocking::{stdintf::org_freedesktop_dbus::Properties, Proxy, SyncConnection};
 use dbus::channel::{Channel as DbusChannel, Token};
-use dbus::arg::messageitem::{MessageItem, MessageItemDict};
 use dbus::strings::Signature;
+use dbus::Message;
 
 use crate::error::MaliitError;
 use crate::events::{InputMethodEvent, Key};
@@ -93,23 +94,45 @@ impl MaliitUiServer {
         preedit_text: &str,
         cursor_position: i32,
     ) -> Result<(), MaliitError> {
-        let _: () = self
-            .proxy()
-            .method_call(SERVER_DBUS_NAME, "setPreedit", (preedit_text, cursor_position))?;
+        let _: () = self.proxy().method_call(
+            SERVER_DBUS_NAME,
+            "setPreedit",
+            (preedit_text, cursor_position),
+        )?;
         Ok(())
     }
 
     pub fn app_orientation_about_to_change(&mut self, angle: i32) -> Result<(), MaliitError> {
-        let _: () = self
-            .proxy()
-            .method_call(SERVER_DBUS_NAME, "appOrientationAboutToChange", (angle,))?;
+        let mut msg = Message::new_method_call(
+            SERVER_DBUS_NAME,
+            SERVER_PATH,
+            SERVER_DBUS_NAME,
+            "appOrientationAboutToChange",
+        )
+        .map_err(|_| MaliitError::NotAvailable)?;
+        msg.set_no_reply(true);
+        msg.append_items(&[MessageItem::Int32(angle)]);
+        self.dbus_conn
+            .channel()
+            .send(msg)
+            .map_err(|_| MaliitError::NotAvailable)?;
         Ok(())
     }
 
     pub fn app_orientation_changed(&mut self, angle: i32) -> Result<(), MaliitError> {
-        let _: () = self
-            .proxy()
-            .method_call(SERVER_DBUS_NAME, "appOrientationChanged", (angle,))?;
+        let mut msg = Message::new_method_call(
+            SERVER_DBUS_NAME,
+            SERVER_PATH,
+            SERVER_DBUS_NAME,
+            "appOrientationChanged",
+        )
+        .map_err(|_| MaliitError::NotAvailable)?;
+        msg.set_no_reply(true);
+        msg.append_items(&[MessageItem::Int32(angle)]);
+        self.dbus_conn
+            .channel()
+            .send(msg)
+            .map_err(|_| MaliitError::NotAvailable)?;
         Ok(())
     }
 
@@ -154,9 +177,11 @@ impl MaliitUiServer {
 
         let dict_item = MessageItem::Dict(dict);
 
-        let _: () = self
-            .proxy()
-            .method_call(SERVER_DBUS_NAME, "updateWidgetInformation", (dict_item, focus_changed))?;
+        let _: () = self.proxy().method_call(
+            SERVER_DBUS_NAME,
+            "updateWidgetInformation",
+            (dict_item, focus_changed),
+        )?;
         Ok(())
     }
 }
@@ -253,7 +278,26 @@ impl MaliitContext {
                                 }
                             }
                         }
-                        _ => return true,
+                        "imInitiatedHide" => {
+                            if let Ok(mut ev) = events.lock() {
+                                ev.push(InputMethodEvent::ImInitiatedHide);
+                            }
+                        }
+                        "activationLostEvent" => {
+                            if let Ok(mut ev) = events.lock() {
+                                ev.push(InputMethodEvent::ActivationLost);
+                            }
+                        }
+                        _ => {
+                            println!("Received unknown method: {}", member.to_string().as_str());
+                            // Unknown method call. We must return true to keep the filter alive.
+                            // If the call expects a reply, send a default error reply.
+                            if !msg.get_no_reply() {
+                                if let Some(reply) = dbus::channel::default_reply(&msg) {
+                                    let _ = _conn.channel().send(reply);
+                                }
+                            }
+                        }
                     }
                 }
                 true
