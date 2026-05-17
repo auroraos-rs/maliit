@@ -6,6 +6,17 @@ use crate::error::MaliitError;
 use crate::events::{InputMethodEvent, Orientation};
 use crate::maliit_dbus::{DbusMaliit, MaliitContext, MaliitUiServer};
 
+/// Information about the text input widget that Maliit uses to configure
+/// the on-screen keyboard (focus state, surrounding text, cursor position, etc.).
+#[derive(Debug, Clone, Default)]
+pub struct WidgetInfo {
+    pub focus_state: bool,
+    pub content_type: i32,
+    pub prediction_enabled: bool,
+    pub cursor_position: i32,
+    pub surrounding_text: String,
+}
+
 pub struct InputMethod {
     ui_server: MaliitUiServer,
     context: MaliitContext,
@@ -60,6 +71,37 @@ impl InputMethod {
         self.ui_server.activate_context()?;
         self.ui_server.app_orientation_about_to_change(angle)?;
         self.ui_server.app_orientation_changed(angle)?;
+        Ok(())
+    }
+
+    /// Update widget information on the Maliit server.
+    ///
+    /// Should be called when the text widget state changes (focus, cursor position,
+    /// surrounding text, etc.). Call with `focus_changed = true` when the widget
+    /// gains or loses focus.
+    pub fn update_widget_information(
+        &mut self,
+        info: &WidgetInfo,
+        focus_changed: bool,
+    ) -> Result<(), MaliitError> {
+        self.ui_server.update_widget_information(
+            info.focus_state,
+            info.content_type,
+            info.prediction_enabled,
+            info.cursor_position,
+            &info.surrounding_text,
+            focus_changed,
+        )
+    }
+
+    /// Show the keyboard after sending the current widget information.
+    ///
+    /// This is the recommended way to open the keyboard when a text widget
+    /// gains focus — it tells Maliit about the widget state before showing.
+    pub fn show_with_info(&mut self, info: &WidgetInfo) -> Result<(), MaliitError> {
+        self.ui_server.activate_context()?;
+        self.update_widget_information(info, false)?;
+        self.ui_server.show_input_method()?;
         Ok(())
     }
 

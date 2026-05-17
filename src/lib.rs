@@ -5,3 +5,4 @@ pub mod input_method;
 
 pub use error::MaliitError;
 pub use events::Orientation;
+pub use input_method::WidgetInfo;

@@ -62,6 +62,8 @@ fn main() -> Result<(), MaliitError> {
 | `reset()` | Сбросить состояние ввода |
 | `set_language(lang)` | Установить язык клавиатуры |
 | `rotate(orientation)` | Повернуть клавиатуру (`Orientation::Portrait` / `Landscape` / `PortraitFlipped` / `LandscapeFlipped`) |
+| `update_widget_information(info, focus_changed)` | Обновить состояние текстового виджета на сервере Maliit |
+| `show_with_info(info)` | Показать клавиатуру, предварительно отправив состояние виджета |
 
 ### Обработка событий
 

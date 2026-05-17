@@ -3,6 +3,8 @@ use std::time::Duration;
 
 use dbus::blocking::{stdintf::org_freedesktop_dbus::Properties, Proxy, SyncConnection};
 use dbus::channel::{Channel as DbusChannel, Token};
+use dbus::arg::messageitem::{MessageItem, MessageItemDict};
+use dbus::strings::Signature;
 
 use crate::error::MaliitError;
 use crate::events::{InputMethodEvent, Key};
@@ -108,6 +110,53 @@ impl MaliitUiServer {
         let _: () = self
             .proxy()
             .method_call(SERVER_DBUS_NAME, "appOrientationChanged", (angle,))?;
+        Ok(())
+    }
+
+    pub fn update_widget_information(
+        &mut self,
+        focus_state: bool,
+        content_type: i32,
+        prediction_enabled: bool,
+        cursor_position: i32,
+        surrounding_text: &str,
+        focus_changed: bool,
+    ) -> Result<(), MaliitError> {
+        let entries = vec![
+            (
+                MessageItem::Str("focusState".to_string()),
+                MessageItem::Variant(Box::new(MessageItem::Bool(focus_state))),
+            ),
+            (
+                MessageItem::Str("contentType".to_string()),
+                MessageItem::Variant(Box::new(MessageItem::Int32(content_type))),
+            ),
+            (
+                MessageItem::Str("predictionEnabled".to_string()),
+                MessageItem::Variant(Box::new(MessageItem::Bool(prediction_enabled))),
+            ),
+            (
+                MessageItem::Str("cursorPosition".to_string()),
+                MessageItem::Variant(Box::new(MessageItem::Int32(cursor_position))),
+            ),
+            (
+                MessageItem::Str("surroundingText".to_string()),
+                MessageItem::Variant(Box::new(MessageItem::Str(surrounding_text.to_string()))),
+            ),
+        ];
+
+        let dict = MessageItemDict::new(
+            entries,
+            Signature::new("s").expect("s is a valid signature"),
+            Signature::new("v").expect("v is a valid signature"),
+        )
+        .map_err(|_| MaliitError::NotAvailable)?;
+
+        let dict_item = MessageItem::Dict(dict);
+
+        let _: () = self
+            .proxy()
+            .method_call(SERVER_DBUS_NAME, "updateWidgetInformation", (dict_item, focus_changed))?;
         Ok(())
     }
 }
