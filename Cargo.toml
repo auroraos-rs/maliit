@@ -4,11 +4,11 @@ version = "0.2.0"
 edition = "2021"
 authors = ["Leyman Maksim <maximleyman@yandex.ru>"]
 description = "Maliit framework client library"
-keywords = ["maliit", "virtual-keyboard"]
+keywords = ["maliit", "virtual-keyboard", "aurora-os", "sailfish-os"]
 readme = "README.md"
 license = "Apache-2.0"
 repository = "https://github.com/auroraos-rs/maliit"
-exclude = ["/.cargo"]
+exclude = ["/.cargo", "./dbus_ifaces"]
 
 [dependencies]
 dbus = "0.9"
