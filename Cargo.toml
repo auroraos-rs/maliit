@@ -8,7 +8,7 @@ keywords = ["maliit", "virtual-keyboard", "aurora-os", "sailfish-os"]
 readme = "README.md"
 license = "Apache-2.0"
 repository = "https://github.com/auroraos-rs/maliit"
-exclude = ["/.cargo", "./dbus_ifaces"]
+exclude = ["/.cargo", "./dbus_ifaces", "AGENTS.md"]
 
 [dependencies]
 dbus = "0.9"
