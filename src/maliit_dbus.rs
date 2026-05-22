@@ -89,18 +89,18 @@ impl MaliitUiServer {
         Ok(())
     }
 
-    pub fn set_preedit(
-        &mut self,
-        preedit_text: &str,
-        cursor_position: i32,
-    ) -> Result<(), MaliitError> {
-        let _: () = self.proxy().method_call(
-            SERVER_DBUS_NAME,
-            "setPreedit",
-            (preedit_text, cursor_position),
-        )?;
-        Ok(())
-    }
+    // pub fn set_preedit(
+    //     &mut self,
+    //     preedit_text: &str,
+    //     cursor_position: i32,
+    // ) -> Result<(), MaliitError> {
+    //     let _: () = self.proxy().method_call(
+    //         SERVER_DBUS_NAME,
+    //         "setPreedit",
+    //         (preedit_text, cursor_position),
+    //     )?;
+    //     Ok(())
+    // }
 
     pub fn app_orientation_about_to_change(&mut self, angle: i32) -> Result<(), MaliitError> {
         let mut msg = Message::new_method_call(
@@ -321,26 +321,26 @@ impl MaliitContext {
         Ok(self.proxy().connection.process(timeout)?)
     }
 
-    pub fn update_preedit(
-        &mut self,
-        text: &str,
-        preedit_formats: (i32, i32, i32),
-        replacement_start: i32,
-        replacement_length: i32,
-        cursor_position: i32,
-    ) -> Result<(), MaliitError> {
-        let method_args = (
-            text,
-            preedit_formats,
-            replacement_start,
-            replacement_length,
-            cursor_position,
-        );
-        let _: () = self
-            .proxy()
-            .method_call(CONTEXT_INTERFACE, "updatePreedit", method_args)?;
-        Ok(())
-    }
+    // pub fn update_preedit(
+    //     &mut self,
+    //     text: &str,
+    //     preedit_formats: (i32, i32, i32),
+    //     replacement_start: i32,
+    //     replacement_length: i32,
+    //     cursor_position: i32,
+    // ) -> Result<(), MaliitError> {
+    //     let method_args = (
+    //         text,
+    //         preedit_formats,
+    //         replacement_start,
+    //         replacement_length,
+    //         cursor_position,
+    //     );
+    //     let _: () = self
+    //         .proxy()
+    //         .method_call(CONTEXT_INTERFACE, "updatePreedit", method_args)?;
+    //     Ok(())
+    // }
 
     pub fn set_language(&mut self, language: &str) -> Result<(), MaliitError> {
         let _: () = self
